@@ -1,10 +1,18 @@
+import logging
+import os
+from typing import List
+import requests
+
+MAX_AZURE_API_RETRIES = 3
+INVOKE_REST_API_TIMEOUT_SECONDS = 30
+AZURE_API_DOWNLOAD_TIMEOUT_SECONDS = 600
+
 
 class AzureAPI():
-
-    def __init__(self, project, log=logging, retries=definitions.MAX_AZURE_API_RETRIES, organization='MSFTDEVICES', headers={}):
+    def __init__(self, organization, project, log=logging, retries=MAX_AZURE_API_RETRIES, , headers={}):
         self.base_url = f"https://dev.azure.com/{organization}/{project}/_apis"
         self.base_params = {"api-version": "5.1"}
-        self.headers = headers
+        self.headers = { 'Content-Type': 'application/json' }
         self.log = log
         self.retries = retries
 
@@ -149,8 +157,8 @@ class AzureAPI():
             if log and retry > 1:
                 log.info(AzureAPI, f"Retry download artifact #{retry}")
             res = requests.get(url,
-                               headers=definitions.get_azure_api_headers(with_content_type=False),
-                               timeout=definitions.AZURE_API_DOWNLOAD_TIMEOUT_SECONDS,
+                               headers=self.headers,
+                               timeout=AZURE_API_DOWNLOAD_TIMEOUT_SECONDS,
                                allow_redirects=True)
             if res.status_code == definitions.AZURE_GET_SUCCESS_CODE:
                 break
@@ -183,7 +191,7 @@ class AzureAPI():
                       data: dict = None):
         request_args = {'url': f"{self.base_url}/{url}",
                         'headers': self.base_headers,
-                        'timeout': basic_definitions.INVOKE_REST_API_TIMEOUT_SECONDS,
+                        'timeout': INVOKE_REST_API_TIMEOUT_SECONDS,
                         'params': {**self.base_params, **(params or {})}}
 
         if data:
